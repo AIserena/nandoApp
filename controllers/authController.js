@@ -43,6 +43,7 @@ exports.login = async (req, res) => {
             user: tokenPayload
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Gagal memproses login:', err);
+        res.status(500).json({ error: 'Terjadi kesalahan pada server saat login.' });
     }
 };
