@@ -1,0 +1,39 @@
+/* Custom Styles for Dashboard */
+.active-tab {
+    border-color: #4f46e5;
+    color: #4f46e5;
+}
+
+.inactive-tab {
+    border-color: transparent;
+    color: #6b7280;
+}
+
+.inactive-tab:hover {
+    color: #374151;
+}
+
+/* Kunci utama dropdown agar tidak pernah terpotong navbar */
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 13rem;
+    z-index: 9999;
+}
+
+/* Class pembantu untuk JavaScript toggle */
+.dropdown-menu.show {
+    display: block !important;
+}
+
+/* Hover effect bawaan CSS */
+.dropdown-container:hover .dropdown-menu {
+    display: block;
+}
+
+/* Memastikan tab-content dengan class hidden selalu tersembunyi */
+.tab-content.hidden {
+    display: none !important;
+}

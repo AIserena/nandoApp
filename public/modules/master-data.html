@@ -1,0 +1,235 @@
+<!-- SUB-MODUL: MASTER USER -->
+        <section id="modul-master-user" class="tab-content hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+                <h2 class="text-base font-bold text-gray-800">User</h2>
+                <div class="flex items-center gap-2">
+                    <button id="btnAddMasterUser" type="button" onclick="openCreateMasterUser()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700">
+                        + Tambah User
+                    </button>
+                
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs border-b">
+                        <tr>
+                            <th class="p-3">ID</th>
+                            <th class="p-3">Username</th>
+                            <th class="p-3">Nama</th>
+                            <th class="p-3">Role</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblMasterUser" class="divide-y divide-gray-100">
+                        <tr><td colspan="4" class="p-4 text-center text-gray-400">Memuat data user...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="masterUserMessage" class="hidden mt-4 text-sm" role="status"></p>
+            <section id="masterUserCreate" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-950/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="masterUserCreateTitle" onclick="if (event.target === this) closeCreateMasterUser()">
+                <div class="my-auto w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl" onclick="event.stopPropagation()">
+                    <div class="flex items-start justify-between border-b border-gray-100 px-6 py-5">
+                        <div>
+                            <h3 id="masterUserCreateTitle" class="text-lg font-bold text-gray-900">Tambah User Baru</h3>
+                            <p class="mt-1 text-sm text-gray-500">Isi informasi akun user yang akan dibuat.</p>
+                        </div>
+                        <button type="button" aria-label="Tutup form tambah user" onclick="closeCreateMasterUser()" class="ml-4 rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                            <span aria-hidden="true">✕</span>
+                        </button>
+                    </div>
+                    <form id="formCreateMasterUser" class="grid gap-4 px-6 py-5 sm:grid-cols-2" onsubmit="createMasterUser(event)">
+                        <label class="block text-sm font-medium text-gray-700">
+                            Nama
+                            <input id="newMasterUserName" type="text" required autocomplete="name" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </label>
+                        <label class="block text-sm font-medium text-gray-700">
+                            Username
+                            <input id="newMasterUserUsername" type="text" required autocomplete="username" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </label>
+                        <label class="block text-sm font-medium text-gray-700">
+                            Role
+                            <select id="newMasterUserRole" required class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                                <option value="gudang">Gudang</option>
+                            </select>
+                        </label>
+                        <label class="block text-sm font-medium text-gray-700">
+                            No. Telepon
+                            <input id="newMasterUserPhone" type="tel" autocomplete="tel" maxlength="20" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </label>
+                        <label class="block text-sm font-medium text-gray-700 sm:col-span-2">
+                            Password
+                            <input id="newMasterUserPassword" type="password" required autocomplete="new-password" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        </label>
+                        <div class="mt-2 flex justify-end gap-3 border-t border-gray-100 pt-4 sm:col-span-2">
+                            <button type="button" onclick="closeCreateMasterUser()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                Batal
+                            </button>
+                            <button id="btnCreateMasterUser" type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
+                                Simpan User
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+            <section id="masterUserDetail" class="hidden mt-6 border-t border-gray-200 pt-6">
+                <div class="mb-5">
+                    <h3 class="text-base font-bold text-gray-800">Informasi User</h3>
+                    <p class="mt-1 text-xs text-gray-500">Pilih user dari daftar untuk melihat atau mengubah informasinya.</p>
+                </div>
+                <div class="grid max-w-2xl gap-4 sm:grid-cols-2">
+                    <label class="block text-sm font-medium text-gray-700">
+                        Username
+                        <input id="masterUserUsername" type="text" autocomplete="username" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </label>
+                    <label class="block text-sm font-medium text-gray-700">
+                        No. Telepon
+                        <input id="masterUserPhone" type="tel" autocomplete="tel" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </label>
+                    <label class="block text-sm font-medium text-gray-700">
+                        Role
+                        <select id="masterUserRole" class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500">
+                            <option value="staff">Staff</option>
+                            <option value="admin">Admin</option>
+                            <option value="gudang">Gudang</option>
+                        </select>
+                    </label>
+                    <label class="block text-sm font-medium text-gray-700 sm:col-span-2">
+                        Password
+                        <input id="masterUserPassword" type="password" autocomplete="new-password" placeholder="•••••••• (kosongkan jika tidak diubah)" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </label>
+                </div>
+                <div class="mt-5 flex flex-wrap items-center gap-3">
+                    <button id="btnSaveMasterUser" type="button" onclick="saveMasterUser()" class="hidden rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">
+                        Simpan Perubahan
+                    </button>
+                    <button id="btnDeleteMasterUser" type="button" onclick="deleteMasterUser()" class="rounded-lg bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100">
+                        Delete User
+                    </button>
+                </div>
+            </section>
+        </section>
+
+        <!-- SUB-MODUL: MASTER BARANG -->
+        <section id="modul-master-barang" class="tab-content hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+                <h2 class="text-base font-bold text-gray-800">Barang</h2>
+                <div class="flex items-center gap-2">
+                    <button id="btnAddMasterBarang" type="button" onclick="openMasterCreate('barang')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700">+ Tambah Barang</button>
+                    
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs border-b">
+                        <tr>
+                            <th class="p-3">Kode Barang</th>
+                            <th class="p-3">Nama Barang</th>
+                            <th class="p-3">Satuan</th>
+                            <th class="p-3">Harga Satuan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblMasterBarang" class="divide-y divide-gray-100">
+                        <tr><td colspan="4" class="p-4 text-center text-gray-400">Memuat data master barang...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="masterBarangMessage" class="hidden mt-4 text-sm" role="status"></p>
+            <section id="masterBarangDetail" class="hidden mt-6 border-t border-gray-200 pt-6">
+                <h3 class="mb-5 text-base font-bold text-gray-800">Informasi Barang</h3>
+                <div id="masterBarangFields" class="grid max-w-2xl gap-4 sm:grid-cols-2"></div>
+                <div class="mt-5 flex flex-wrap items-center gap-3">
+                    <button id="btnSaveMasterBarang" type="button" onclick="saveMasterRecord('barang')" class="hidden rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Simpan Perubahan</button>
+                    <button type="button" onclick="deleteMasterRecord('barang')" class="rounded-lg bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100">Delete Barang</button>
+                </div>
+            </section>
+        </section>
+
+        <!-- SUB-MODUL: MASTER SUPPLIER -->
+        <section id="modul-master-supplier" class="tab-content hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+                <h2 class="text-base font-bold text-gray-800">Supplier</h2>
+                <div class="flex items-center gap-2">
+                    <button id="btnAddMasterSupplier" type="button" onclick="openMasterCreate('supplier')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700">+ Tambah Supplier</button>
+                    
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs border-b">
+                        <tr>
+                            <th class="p-3">Kode Supplier</th>
+                            <th class="p-3">Nama Supplier</th>
+                            <th class="p-3">Kontak / HP</th>
+                            <th class="p-3">Alamat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblMasterSupplier" class="divide-y divide-gray-100">
+                        <tr><td colspan="4" class="p-4 text-center text-gray-400">Memuat data supplier...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="masterSupplierMessage" class="hidden mt-4 text-sm" role="status"></p>
+            <section id="masterSupplierDetail" class="hidden mt-6 border-t border-gray-200 pt-6">
+                <h3 class="mb-5 text-base font-bold text-gray-800">Informasi Supplier</h3>
+                <div id="masterSupplierFields" class="grid max-w-2xl gap-4 sm:grid-cols-2"></div>
+                <div class="mt-5 flex flex-wrap items-center gap-3">
+                    <button id="btnSaveMasterSupplier" type="button" onclick="saveMasterRecord('supplier')" class="hidden rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Simpan Perubahan</button>
+                    <button type="button" onclick="deleteMasterRecord('supplier')" class="rounded-lg bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100">Delete Supplier</button>
+                </div>
+            </section>
+        </section>
+
+        <!-- SUB-MODUL: MASTER PELANGGAN -->
+        <section id="modul-master-pelanggan" class="tab-content hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+                <h2 class="text-base font-bold text-gray-800">Pelanggan</h2>
+                <div class="flex items-center gap-2">
+                    <button id="btnAddMasterPelanggan" type="button" onclick="openMasterCreate('pelanggan')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700">+ Tambah Pelanggan</button>
+                    
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead class="bg-gray-50 text-gray-600 uppercase text-xs border-b">
+                        <tr>
+                            <th class="p-3">Kode Pelanggan</th>
+                            <th class="p-3">Nama Pelanggan</th>
+                            <th class="p-3">Alamat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tblMasterPelanggan" class="divide-y divide-gray-100">
+                        <tr><td colspan="3" class="p-4 text-center text-gray-400">Memuat data pelanggan...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="masterPelangganMessage" class="hidden mt-4 text-sm" role="status"></p>
+            <section id="masterPelangganDetail" class="hidden mt-6 border-t border-gray-200 pt-6">
+                <h3 class="mb-5 text-base font-bold text-gray-800">Informasi Pelanggan</h3>
+                <div id="masterPelangganFields" class="grid max-w-2xl gap-4 sm:grid-cols-2"></div>
+                <div class="mt-5 flex flex-wrap items-center gap-3">
+                    <button id="btnSaveMasterPelanggan" type="button" onclick="saveMasterRecord('pelanggan')" class="hidden rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Simpan Perubahan</button>
+                    <button type="button" onclick="deleteMasterRecord('pelanggan')" class="rounded-lg bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-100">Delete Pelanggan</button>
+                </div>
+            </section>
+        </section>
+
+        <section id="masterDataCreate" class="hidden fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-gray-950/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="masterDataCreateTitle" onclick="if (event.target === this) closeMasterCreate()">
+            <div class="my-auto w-full max-w-xl overflow-hidden rounded-2xl bg-white shadow-2xl" onclick="event.stopPropagation()">
+                <div class="flex items-start justify-between border-b border-gray-100 px-6 py-5">
+                    <div>
+                        <h3 id="masterDataCreateTitle" class="text-lg font-bold text-gray-900">Tambah Master Data</h3>
+                        <p class="mt-1 text-sm text-gray-500">Isi informasi data baru.</p>
+                    </div>
+                    <button type="button" aria-label="Tutup form" onclick="closeMasterCreate()" class="ml-4 rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">✕</button>
+                </div>
+                <form id="formMasterDataCreate" class="grid gap-4 px-6 py-5 sm:grid-cols-2" onsubmit="createMasterRecord(event)">
+                    <div id="masterDataCreateFields" class="grid gap-4 sm:col-span-2 sm:grid-cols-2"></div>
+                    <p id="masterDataCreateMessage" class="hidden text-sm text-red-600 sm:col-span-2" role="alert"></p>
+                    <div class="mt-2 flex justify-end gap-3 border-t border-gray-100 pt-4 sm:col-span-2">
+                        <button type="button" onclick="closeMasterCreate()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Batal</button>
+                        <button id="btnCreateMasterRecord" type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </section>

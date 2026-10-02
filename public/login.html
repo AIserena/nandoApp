@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nandoApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .login-page {
+            position: relative;
+            isolation: isolate;
+            overflow: hidden;
+            background:
+                radial-gradient(ellipse at 15% 85%, rgba(203, 213, 225, 0.65), transparent 48%),
+                linear-gradient(135deg, #f8fafc, #e2e8f0);
+        }
+
+        .login-cursor-light {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.9;
+            background:
+                radial-gradient(460px circle at var(--light-x, 50%) var(--light-y, 50%), rgba(96, 165, 250, 0.32), transparent 68%),
+                radial-gradient(620px circle at var(--light-x, 50%) var(--light-y, 50%), rgba(255, 255, 255, 0.82), transparent 72%);
+            transition: opacity 300ms ease;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .login-cursor-light {
+                transition: none;
+            }
+        }
+    </style>
+</head>
+<body class="login-page flex items-center justify-center min-h-screen">
+    <div id="loginCursorLight" class="login-cursor-light" aria-hidden="true"></div>
+
+    <div class="relative z-10 bg-white/90 backdrop-blur-sm p-8 rounded-xl shadow-lg w-full max-w-md border border-gray-200">
+        <!-- Header / Logo -->
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">nandoApp</h1>
+            <p class="text-sm text-gray-500 mt-1"></p>
+        </div>
+
+        <!-- Alert Notifikasi Error -->
+        <div id="alertBox" class="hidden mb-4 p-3 bg-red-100 border border-red-400 text-red-700 text-sm rounded-lg"></div>
+
+        <!-- Form Login -->
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Masukkan username" 
+                    class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none text-sm transition">
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                <input type="password" id="password" name="password" required placeholder="Masukkan password" 
+                    class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none text-sm transition">
+            </div>
+
+            <button type="submit" id="btnLogin" 
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+                Masuk
+            </button>
+        </form>
+    </div>
+
+
+    
+    <!-- Script Integrasi API -->
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        const cursorLight = document.getElementById('loginCursorLight');
+        let cursorLightFrame = null;
+
+        document.addEventListener('pointermove', (event) => {
+            if (event.pointerType === 'touch' || cursorLightFrame !== null) return;
+            cursorLightFrame = requestAnimationFrame(() => {
+                cursorLight.style.setProperty('--light-x', `${event.clientX}px`);
+                cursorLight.style.setProperty('--light-y', `${event.clientY}px`);
+                cursorLightFrame = null;
+            });
+        });
+
+        document.addEventListener('pointerleave', () => {
+            cursorLight.style.opacity = '0.55';
+        });
+
+        document.addEventListener('pointerenter', () => {
+            cursorLight.style.opacity = '0.9';
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value;
+            const alertBox = document.getElementById('alertBox');
+            const btnLogin = document.getElementById('btnLogin');
+
+            alertBox.classList.add('hidden');
+            btnLogin.disabled = true;
+            btnLogin.textContent = 'Memproses...';
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Simpan token JWT & data user ke LocalStorage
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    // Pindah ke halaman dashboard
+                    window.location.href = '/dashboard.html';
+                } else {
+                    alertBox.textContent = data.error || data.message || 'Login gagal! Periksa kembali akun Anda.';
+                    alertBox.classList.remove('hidden');
+                }
+            } catch (err) {
+                alertBox.textContent = 'Gagal terhubung ke server backend Express!';
+                alertBox.classList.remove('hidden');
+            } finally {
+                btnLogin.disabled = false;
+                btnLogin.textContent = 'Masuk';
+            }
+        });
+    </script>
+</body>
+</html>
