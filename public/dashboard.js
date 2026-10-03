@@ -537,7 +537,6 @@ async function fetchMasterData(entity) {
 
         if (entity === 'barang') {
             globalBarang = records;
-            renderPosTable(globalBarang);
             const selectBarang = document.getElementById('stokInBarangId');
             if (selectBarang) {
                 selectBarang.replaceChildren(new Option('-- Pilih Barang --', ''));
