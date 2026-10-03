@@ -6,5 +6,6 @@ const { verifyToken } = require('../middlewares/authMiddleware');
 router.get('/', verifyToken, penjualanController.getAllPenjualan);
 router.get('/:noPenjualan', verifyToken, penjualanController.getPenjualanById);
 router.post('/', verifyToken, penjualanController.createPenjualan);
+router.put('/:noPenjualan', verifyToken, penjualanController.updatePenjualan);
 
 module.exports = router;

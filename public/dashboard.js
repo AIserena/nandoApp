@@ -4,6 +4,8 @@ const user = JSON.parse(localStorage.getItem('user') || '{}');
 
 let globalBarang = [];
 let inventoryBarangOptions = null;
+let editingStockInNumber = null;
+let editingSaleNumber = null;
 let selectedMasterUserId = null;
 let masterUserInitialValues = null;
 let activeMasterCreateEntity = null;
@@ -829,9 +831,15 @@ async function fetchStockIn() {
     }
 }
 
-async function openStockInCreate() {
+async function openStockInCreate(stockIn = null) {
     const form = document.getElementById('formStockInCreate');
     form.reset();
+    editingStockInNumber = stockIn?.no_stok_in || null;
+    document.getElementById('stockInCreateTitle').textContent =
+        editingStockInNumber ? 'Edit Stok In' : 'Tambah Stok In';
+    document.getElementById('btnSaveStockIn').textContent =
+        editingStockInNumber ? 'Simpan Perubahan' : 'Simpan Stok In';
+    document.getElementById('newStockInNumber').readOnly = Boolean(editingStockInNumber);
     document.getElementById('stockInCreateMessage').classList.add('hidden');
     const today = new Date();
     document.getElementById('newStockInDate').value = [
@@ -867,9 +875,23 @@ async function openStockInCreate() {
         globalBarang = barangResult.data;
         if (!globalBarang.length) throw new Error('Tambahkan master barang terlebih dahulu sebelum membuat stok in.');
 
+        if (stockIn) {
+            document.getElementById('newStockInNumber').value = stockIn.no_stok_in;
+            document.getElementById('newStockInDate').value = String(stockIn.tanggal).slice(0, 10);
+            document.getElementById('newStockInSupplier').value = stockIn.kode_supplier || '';
+            stockIn.details.forEach(detail => {
+                addStockInItemRow();
+                const row = document.querySelector('.stock-in-create-row:last-child');
+                row.querySelector('.stock-in-product').value = detail.kode_barang;
+                row.querySelector('.stock-in-qty').value = detail.qty;
+                row.querySelector('.stock-in-price').value = detail.satuan_harga;
+            });
+            updateStockInCreateTotal();
+        }
+
         document.getElementById('stockInCreateModal').classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
-        addStockInItemRow();
+        if (!stockIn) addStockInItemRow();
         document.getElementById('newStockInNumber').focus();
     } catch (err) {
         console.error('Gagal membuka form stok in:', err);
@@ -883,6 +905,8 @@ function closeStockInCreate() {
     modal.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
     document.getElementById('formStockInCreate').reset();
+    editingStockInNumber = null;
+    document.getElementById('newStockInNumber').readOnly = false;
 }
 
 function addStockInItemRow() {
@@ -968,7 +992,7 @@ function updateStockInCreateTotal() {
         `Rp ${grandTotal.toLocaleString('id-ID')}`;
 }
 
-async function createStockIn(event) {
+async function saveStockIn(event) {
     event.preventDefault();
     const rows = Array.from(document.querySelectorAll('.stock-in-create-row'));
     if (!rows.length) {
@@ -977,7 +1001,7 @@ async function createStockIn(event) {
         return;
     }
 
-    const button = document.getElementById('btnCreateStockIn');
+    const button = document.getElementById('btnSaveStockIn');
     const message = document.getElementById('stockInCreateMessage');
     button.disabled = true;
     message.classList.add('hidden');
@@ -992,16 +1016,24 @@ async function createStockIn(event) {
                 satuan_harga: Number(row.querySelector('.stock-in-price').value)
             }))
         };
-        const res = await fetch(`${API_URL}/stokin`, {
-            method: 'POST',
+        const res = await fetch(
+            editingStockInNumber
+                ? `${API_URL}/stokin/${encodeURIComponent(editingStockInNumber)}`
+                : `${API_URL}/stokin`,
+            {
+            method: editingStockInNumber ? 'PUT' : 'POST',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error || 'Gagal menyimpan stok in.');
+        const wasEditing = Boolean(editingStockInNumber);
         closeStockInCreate();
         await fetchStockIn();
-        showStockInMessage('Transaksi stok in berhasil ditambahkan.', true);
+        showStockInMessage(
+            wasEditing ? 'Transaksi stok in berhasil diperbarui.' : 'Transaksi stok in berhasil ditambahkan.',
+            true
+        );
     } catch (err) {
         console.error('Gagal menyimpan stok in:', err);
         message.textContent = err.message;
@@ -1073,7 +1105,7 @@ async function showSalesDetail(noPenjualan) {
         if (!Array.isArray(sale.details) || !sale.details.length) {
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 5;
+            cell.colSpan = 6;
             cell.className = 'p-4 text-center text-gray-400';
             cell.textContent = 'Tidak ada rincian barang.';
             row.appendChild(cell);
@@ -1084,6 +1116,7 @@ async function showSalesDetail(noPenjualan) {
                 [
                     detail.kode_barang,
                     detail.nama_barang || '-',
+                    detail.no_stok_in || 'Belum ditentukan',
                     `${detail.qty} ${detail.satuan || ''}`.trim(),
                     `Rp ${Number(detail.satuan_harga || 0).toLocaleString('id-ID')}`,
                     `Rp ${Number(detail.subtotal || 0).toLocaleString('id-ID')}`
@@ -1096,11 +1129,27 @@ async function showSalesDetail(noPenjualan) {
                 tbody.appendChild(row);
             });
         }
+        document.getElementById('btnEditSale').onclick = () => editSale(noPenjualan);
         document.getElementById('salesDetailModal').classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
         showSalesMessage('');
     } catch (err) {
         console.error('Gagal load detail penjualan:', err);
+        showSalesMessage(err.message);
+    }
+}
+
+async function editSale(noPenjualan) {
+    try {
+        const res = await fetch(`${API_URL}/penjualan/${encodeURIComponent(noPenjualan)}`, {
+            headers: { Authorization: 'Bearer ' + token }
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Gagal mengambil detail penjualan.');
+        closeSalesDetail();
+        await openSalesCreate(result.data);
+    } catch (err) {
+        console.error('Gagal membuka edit penjualan:', err);
         showSalesMessage(err.message);
     }
 }
@@ -1118,8 +1167,14 @@ function showSalesMessage(message, success = false) {
     element.classList.toggle('text-red-600', Boolean(message) && !success);
 }
 
-async function openSalesCreate() {
+async function openSalesCreate(sale = null) {
     document.getElementById('formSalesCreate').reset();
+    editingSaleNumber = sale?.no_penjualan || null;
+    document.getElementById('salesCreateTitle').textContent =
+        editingSaleNumber ? 'Edit Penjualan' : 'Tambah Penjualan';
+    document.getElementById('btnSaveSale').textContent =
+        editingSaleNumber ? 'Simpan Perubahan' : 'Simpan Penjualan';
+    document.getElementById('newSalesNumber').readOnly = Boolean(editingSaleNumber);
     document.getElementById('salesCreateMessage').classList.add('hidden');
     const today = new Date();
     document.getElementById('newSalesDate').value = [
@@ -1153,9 +1208,18 @@ async function openSalesCreate() {
         globalBarang = productResult.data;
         if (!globalBarang.length) throw new Error('Tambahkan master barang terlebih dahulu sebelum membuat penjualan.');
 
+        if (sale) {
+            document.getElementById('newSalesNumber').value = sale.no_penjualan;
+            document.getElementById('newSalesDate').value = String(sale.tanggal).slice(0, 10);
+            document.getElementById('newSalesCustomer').value = sale.kode_pelanggan || '';
+        }
         document.getElementById('salesCreateModal').classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
-        addSalesItemRow();
+        if (sale) {
+            for (const detail of sale.details) await addSalesItemRow(detail);
+        } else {
+            await addSalesItemRow();
+        }
         document.getElementById('newSalesNumber').focus();
     } catch (err) {
         console.error('Gagal membuka form penjualan:', err);
@@ -1169,9 +1233,11 @@ function closeSalesCreate() {
     modal.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
     document.getElementById('formSalesCreate').reset();
+    editingSaleNumber = null;
+    document.getElementById('newSalesNumber').readOnly = false;
 }
 
-function addSalesItemRow() {
+async function addSalesItemRow(initialItem = null) {
     const row = document.createElement('tr');
     row.className = 'sales-create-row';
 
@@ -1186,6 +1252,14 @@ function addSalesItemRow() {
         product.kode_barang
     )));
     productCell.appendChild(productSelect);
+
+    const stockInCell = document.createElement('td');
+    stockInCell.className = 'p-2';
+    const stockInSelect = document.createElement('select');
+    stockInSelect.className = 'sales-stockin w-full min-w-48 rounded-lg border border-gray-300 px-2 py-2 text-sm';
+    stockInSelect.required = true;
+    stockInSelect.add(new Option('-- Pilih nomor stok in --', ''));
+    stockInCell.appendChild(stockInSelect);
 
     const stockCell = document.createElement('td');
     stockCell.className = 'sales-stock whitespace-nowrap p-2 text-sm text-gray-600';
@@ -1222,18 +1296,78 @@ function addSalesItemRow() {
     });
     actionCell.appendChild(removeButton);
 
-    productSelect.addEventListener('change', () => {
-        const product = globalBarang.find(item => item.kode_barang === productSelect.value);
-        stockCell.textContent = product ? `${product.stok ?? 0} ${product.satuan || ''}`.trim() : '-';
-        priceCell.textContent = product
-            ? `Rp ${Number(product.satuan_harga || 0).toLocaleString('id-ID')}`
-            : '-';
+    productSelect.addEventListener('change', () => handleSalesProductChange(row));
+    stockInSelect.addEventListener('change', () => {
+        const option = stockInSelect.selectedOptions[0];
+        qtyInput.max = option?.dataset.available || '';
         updateSalesCreateTotal();
     });
     qtyInput.addEventListener('input', updateSalesCreateTotal);
-    row.append(productCell, stockCell, qtyCell, priceCell, subtotalCell, actionCell);
+    row.append(productCell, stockInCell, stockCell, qtyCell, priceCell, subtotalCell, actionCell);
     document.getElementById('salesCreateItems').appendChild(row);
+    if (initialItem) {
+        productSelect.value = initialItem.kode_barang;
+        await handleSalesProductChange(row, initialItem.no_stok_in);
+        qtyInput.value = initialItem.qty;
+    }
     updateSalesCreateTotal();
+}
+
+async function handleSalesProductChange(row, selectedStockIn = '') {
+    const code = row.querySelector('.sales-product').value;
+    const message = document.getElementById('salesCreateMessage');
+    message.classList.add('hidden');
+    const stockSelect = row.querySelector('.sales-stockin');
+    const stockCell = row.querySelector('.sales-stock');
+    const priceCell = row.querySelector('.sales-price');
+    const qtyInput = row.querySelector('.sales-qty');
+    const product = globalBarang.find(item => item.kode_barang === code);
+    stockCell.textContent = product ? `${product.stok ?? 0} ${product.satuan || ''}`.trim() : '-';
+    priceCell.textContent = product
+        ? `Rp ${Number(product.satuan_harga || 0).toLocaleString('id-ID')}`
+        : '-';
+    qtyInput.max = '';
+    stockSelect.replaceChildren(new Option(
+        product ? 'Memuat nomor stok in...' : '-- Pilih barang dahulu --',
+        ''
+    ));
+    updateSalesCreateTotal();
+    if (!product) return;
+
+    try {
+        const params = editingSaleNumber
+            ? `?exclude_sale=${encodeURIComponent(editingSaleNumber)}`
+            : '';
+        const res = await fetch(
+            `${API_URL}/stokin/available/${encodeURIComponent(code)}${params}`,
+            { headers: { Authorization: 'Bearer ' + token } }
+        );
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Gagal mengambil pilihan nomor stok in.');
+        if (!Array.isArray(result.data)) throw new Error('Format pilihan nomor stok in tidak valid.');
+        if (row.querySelector('.sales-product').value !== code) return;
+
+        stockSelect.replaceChildren(new Option(
+            result.data.length ? '-- Pilih nomor stok in --' : 'Tidak ada stok masuk tersisa',
+            ''
+        ));
+        result.data.forEach(batch => {
+            const option = new Option(
+                `${batch.no_stok_in} (${batch.tanggal}, tersedia ${batch.available})`,
+                batch.no_stok_in
+            );
+            option.dataset.available = batch.available;
+            stockSelect.add(option);
+        });
+        if (selectedStockIn) stockSelect.value = selectedStockIn;
+        const selected = stockSelect.selectedOptions[0];
+        qtyInput.max = selected?.dataset.available || '';
+    } catch (err) {
+        console.error('Gagal memuat batch stok untuk penjualan:', err);
+        stockSelect.replaceChildren(new Option('-- Gagal memuat nomor stok in --', ''));
+        document.getElementById('salesCreateMessage').textContent = err.message;
+        document.getElementById('salesCreateMessage').classList.remove('hidden');
+    }
 }
 
 function updateSalesCreateTotal() {
@@ -1252,7 +1386,7 @@ function updateSalesCreateTotal() {
         `Rp ${grandTotal.toLocaleString('id-ID')}`;
 }
 
-async function createSale(event) {
+async function saveSale(event) {
     event.preventDefault();
     const rows = Array.from(document.querySelectorAll('.sales-create-row'));
     const message = document.getElementById('salesCreateMessage');
@@ -1262,7 +1396,7 @@ async function createSale(event) {
         return;
     }
 
-    const button = document.getElementById('btnCreateSale');
+    const button = document.getElementById('btnSaveSale');
     button.disabled = true;
     message.classList.add('hidden');
     try {
@@ -1272,19 +1406,28 @@ async function createSale(event) {
             kode_pelanggan: document.getElementById('newSalesCustomer').value || null,
             items: rows.map(row => ({
                 kode_barang: row.querySelector('.sales-product').value,
+                no_stok_in: row.querySelector('.sales-stockin').value,
                 qty: Number(row.querySelector('.sales-qty').value)
             }))
         };
-        const res = await fetch(`${API_URL}/penjualan`, {
-            method: 'POST',
+        const res = await fetch(
+            editingSaleNumber
+                ? `${API_URL}/penjualan/${encodeURIComponent(editingSaleNumber)}`
+                : `${API_URL}/penjualan`,
+            {
+            method: editingSaleNumber ? 'PUT' : 'POST',
             headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error || 'Gagal menyimpan penjualan.');
+        const wasEditing = Boolean(editingSaleNumber);
         closeSalesCreate();
         await fetchSales();
-        showSalesMessage('Transaksi penjualan berhasil ditambahkan.', true);
+        showSalesMessage(
+            wasEditing ? 'Transaksi penjualan berhasil diperbarui.' : 'Transaksi penjualan berhasil ditambahkan.',
+            true
+        );
     } catch (err) {
         console.error('Gagal menyimpan penjualan:', err);
         message.textContent = err.message;
@@ -1350,11 +1493,57 @@ async function showStockInDetail(noStokIn) {
                 tbody.appendChild(row);
             });
         }
+        const canEdit = Boolean(stockIn.can_edit);
+        const actions = document.getElementById('stockInDetailActions');
+        actions.classList.toggle('hidden', !canEdit);
+        const lockMessage = document.getElementById('stockInDetailLockMessage');
+        lockMessage.textContent = canEdit
+            ? ''
+            : 'Stok in ini tidak dapat diedit atau dihapus karena sudah terkait dengan penjualan.';
+        lockMessage.classList.toggle('hidden', canEdit);
+        document.getElementById('btnEditStockIn').onclick = () => editStockIn(noStokIn);
+        document.getElementById('btnDeleteStockIn').onclick = () => deleteStockIn(noStokIn);
         document.getElementById('stockInDetailModal').classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
         showStockInMessage('');
     } catch (err) {
         console.error('Gagal load detail stok in:', err);
+        showStockInMessage(err.message);
+    }
+}
+
+async function editStockIn(noStokIn) {
+    try {
+        const res = await fetch(`${API_URL}/stokin/${encodeURIComponent(noStokIn)}`, {
+            headers: { Authorization: 'Bearer ' + token }
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Gagal mengambil detail stok in.');
+        if (!result.data.can_edit) {
+            throw new Error('Stok in tidak dapat diedit karena sudah terkait dengan penjualan.');
+        }
+        closeStockInDetail();
+        await openStockInCreate(result.data);
+    } catch (err) {
+        console.error('Gagal membuka edit stok in:', err);
+        showStockInMessage(err.message);
+    }
+}
+
+async function deleteStockIn(noStokIn) {
+    if (!window.confirm(`Hapus stok in ${noStokIn}? Stok barang akan dikurangi.`)) return;
+    try {
+        const res = await fetch(`${API_URL}/stokin/${encodeURIComponent(noStokIn)}`, {
+            method: 'DELETE',
+            headers: { Authorization: 'Bearer ' + token }
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Gagal menghapus stok in.');
+        closeStockInDetail();
+        await fetchStockIn();
+        showStockInMessage(`Stok in ${noStokIn} berhasil dihapus.`, true);
+    } catch (err) {
+        console.error('Gagal menghapus stok in:', err);
         showStockInMessage(err.message);
     }
 }
@@ -1400,9 +1589,13 @@ async function handleInventoryFilterChange() {
     const input = document.getElementById('inventorySearchValue');
     const select = document.getElementById('inventoryBarangSelect');
     const isBarangFilter = filter === 'nama_barang';
+    const isAllFilter = filter === 'semua';
+    document.getElementById('inventorySearchField').classList.toggle('hidden', isAllFilter);
+    document.getElementById('btnInventorySearch').textContent =
+        isAllFilter ? 'Tampilkan Semua Stok' : 'Cari Stok';
 
-    input.classList.toggle('hidden', isBarangFilter);
-    input.required = !isBarangFilter;
+    input.classList.toggle('hidden', isBarangFilter || isAllFilter);
+    input.required = !isBarangFilter && !isAllFilter;
     select.classList.toggle('hidden', !isBarangFilter);
     select.required = isBarangFilter;
     input.value = '';
@@ -1443,15 +1636,16 @@ async function handleInventoryFilterChange() {
 async function fetchInventory(event) {
     if (event) event.preventDefault();
     const filter = document.getElementById('inventoryFilter').value;
-    const value = (filter === 'nama_barang'
+    const isAllFilter = filter === 'semua';
+    const value = isAllFilter ? '' : (filter === 'nama_barang'
         ? document.getElementById('inventoryBarangSelect').value
         : document.getElementById('inventorySearchValue').value).trim();
     const tbody = document.getElementById('tblInventory');
-    if (!filter || !value) {
-        if (!filter && !value) {
+    if (!filter || (!isAllFilter && !value)) {
+        if (!filter) {
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 4;
+            cell.colSpan = 5;
             cell.className = 'p-4 text-center text-gray-400';
             cell.textContent = 'Pilih kriteria dan masukkan kata kunci untuk mencari stok.';
             tbody.replaceChildren(row);
@@ -1466,7 +1660,8 @@ async function fetchInventory(event) {
     const button = document.getElementById('btnInventorySearch');
     button.disabled = true;
     try {
-        const params = new URLSearchParams({ filter, value });
+        const params = new URLSearchParams({ filter });
+        if (value) params.set('value', value);
         const res = await fetch(`${API_URL}/inventory?${params}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -1478,7 +1673,7 @@ async function fetchInventory(event) {
         if (!result.data.length) {
             const row = document.createElement('tr');
             const cell = document.createElement('td');
-            cell.colSpan = 4;
+            cell.colSpan = 5;
             cell.className = 'p-4 text-center text-gray-400';
             cell.textContent = 'Tidak ditemukan barang untuk kriteria tersebut.';
             row.appendChild(cell);
@@ -1487,12 +1682,18 @@ async function fetchInventory(event) {
             result.data.forEach(item => {
                 const row = document.createElement('tr');
                 const stock = Number(item.stok) || 0;
-                [item.kode_barang, item.nama_barang, stock, stock < 5 ? 'Stok Kritis' : 'Aman'].forEach((value, index) => {
+                [
+                    item.no_stok_in || '-',
+                    item.kode_barang,
+                    item.nama_barang,
+                    stock,
+                    stock < 5 ? 'Stok Kritis' : 'Aman'
+                ].forEach((value, index) => {
                     const cell = document.createElement('td');
-                    cell.className = index === 1 ? 'p-3 font-medium' : 'p-3';
+                    cell.className = index === 2 ? 'p-3 font-medium' : 'p-3';
                     cell.textContent = value ?? '-';
-                    if (index === 2) cell.classList.add('font-bold');
-                    if (index === 3) {
+                    if (index === 3) cell.classList.add('font-bold');
+                    if (index === 4) {
                         const badge = document.createElement('span');
                         badge.className = `rounded px-2 py-0.5 text-xs font-semibold ${stock < 5 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`;
                         badge.textContent = value;
@@ -1503,7 +1704,16 @@ async function fetchInventory(event) {
                 tbody.appendChild(row);
             });
         }
-        showInventoryMessage(`${result.data.length} barang ditemukan.`, true);
+        if (Array.isArray(result.unallocated) && result.unallocated.length) {
+            const products = result.unallocated
+                .map(item => `${item.nama_barang} (${item.jumlah_penjualan} transaksi)`)
+                .join(', ');
+            showInventoryMessage(
+                `Perhatian: penjualan lama belum dialokasikan ke nomor Stok In: ${products}. Edit transaksi tersebut agar sisa stok per batch akurat.`
+            );
+        } else {
+            showInventoryMessage(`${result.data.length} baris stok ditemukan.`, true);
+        }
     } catch (err) {
         console.error('Gagal mencari inventory:', err);
         showInventoryMessage(err.message);
@@ -1519,4 +1729,3 @@ function showInventoryMessage(message, success = false) {
     element.classList.toggle('text-green-700', success);
     element.classList.toggle('text-red-600', Boolean(message) && !success);
 }
-

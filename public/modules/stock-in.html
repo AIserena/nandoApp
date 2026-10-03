@@ -57,6 +57,11 @@
                     <div class="flex justify-end border-t border-gray-100 pt-4">
                         <p class="text-base font-bold text-gray-800">Grand Total: <span id="stockInDetailTotal" class="text-indigo-600"></span></p>
                     </div>
+                    <p id="stockInDetailLockMessage" class="hidden text-sm text-amber-700" role="status"></p>
+                    <div id="stockInDetailActions" class="hidden flex justify-end gap-3 border-t border-gray-100 pt-4">
+                        <button id="btnEditStockIn" type="button" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Edit Stok In</button>
+                        <button id="btnDeleteStockIn" type="button" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700">Hapus Stok In</button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -70,7 +75,7 @@
                     </div>
                     <button type="button" aria-label="Tutup form stok in" onclick="closeStockInCreate()" class="ml-4 rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">✕</button>
                 </div>
-                <form id="formStockInCreate" class="space-y-5 px-6 py-5" onsubmit="createStockIn(event)">
+                <form id="formStockInCreate" class="space-y-5 px-6 py-5" onsubmit="saveStockIn(event)">
                     <div class="grid gap-4 sm:grid-cols-3">
                         <label class="block text-sm font-medium text-gray-700">
                             No. Stok In
@@ -112,7 +117,7 @@
                         <p class="text-base font-bold text-gray-800">Grand Total: <span id="newStockInTotal" class="text-indigo-600">Rp 0</span></p>
                         <div class="flex justify-end gap-3">
                             <button type="button" onclick="closeStockInCreate()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">Batal</button>
-                            <button id="btnCreateStockIn" type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Simpan Stok In</button>
+                            <button id="btnSaveStockIn" type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50">Simpan Stok In</button>
                         </div>
                     </div>
                 </form>

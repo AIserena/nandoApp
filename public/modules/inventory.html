@@ -2,19 +2,20 @@
         <section id="modul-inventory" class="tab-content hidden bg-white p-6 rounded-xl shadow-sm border border-gray-200">
             <div class="mb-6">
                 <h2 class="text-base font-bold text-gray-800">Cari Stok Inventory</h2>
-                <p class="mt-1 text-xs text-gray-500">Cari berdasarkan nomor Stok In, nomor Penjualan, atau nama barang. Hasil menampilkan stok barang saat ini.</p>
+                <p class="mt-1 text-xs text-gray-500">Lihat semua stok per nomor Stok In, atau cari stok berdasarkan nomor transaksi dan nama barang.</p>
             </div>
             <form id="formInventorySearch" class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end" onsubmit="fetchInventory(event)">
                 <label class="block text-sm font-medium text-gray-700">
                     Cari berdasarkan
                     <select id="inventoryFilter" required onchange="handleInventoryFilterChange()" class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-56">
                         <option value="">-- Pilih kriteria --</option>
+                        <option value="semua">Semua stok per nomor Stok In</option>
                         <option value="no_stok_in">Nomor Stok In</option>
                         <option value="no_penjualan">Nomor Penjualan</option>
                         <option value="nama_barang">Nama Barang</option>
                     </select>
                 </label>
-                <label class="block flex-1 text-sm font-medium text-gray-700">
+                <label id="inventorySearchField" class="block flex-1 text-sm font-medium text-gray-700">
                     Kata kunci
                     <input id="inventorySearchValue" type="text" required maxlength="100" placeholder="Masukkan nomor transaksi" class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                     <select id="inventoryBarangSelect" class="hidden mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-normal focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500" aria-label="Pilih nama barang">
@@ -28,6 +29,7 @@
                 <table class="w-full text-left border-collapse text-sm">
                     <thead class="bg-gray-50 text-gray-600 uppercase text-xs border-b">
                         <tr>
+                            <th class="p-3">No. Stok In</th>
                             <th class="p-3">Kode Barang</th>
                             <th class="p-3">Nama Barang</th>
                             <th class="p-3">Stok Saat Ini</th>
@@ -35,7 +37,7 @@
                         </tr>
                     </thead>
                     <tbody id="tblInventory" class="divide-y divide-gray-100">
-                        <tr><td colspan="4" class="p-4 text-center text-gray-400">Pilih kriteria dan masukkan kata kunci untuk mencari stok.</td></tr>
+                        <tr><td colspan="5" class="p-4 text-center text-gray-400">Pilih kriteria dan masukkan kata kunci untuk mencari stok.</td></tr>
                     </tbody>
                 </table>
             </div>
