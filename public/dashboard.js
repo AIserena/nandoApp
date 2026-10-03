@@ -1130,11 +1130,30 @@ async function showSalesDetail(noPenjualan) {
             });
         }
         document.getElementById('btnEditSale').onclick = () => editSale(noPenjualan);
+        document.getElementById('btnDeleteSale').onclick = () => deleteSale(noPenjualan);
         document.getElementById('salesDetailModal').classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
         showSalesMessage('');
     } catch (err) {
         console.error('Gagal load detail penjualan:', err);
+        showSalesMessage(err.message);
+    }
+}
+
+async function deleteSale(noPenjualan) {
+    if (!window.confirm(`Hapus penjualan ${noPenjualan}? Qty barang akan dikembalikan ke stok.`)) return;
+    try {
+        const res = await fetch(`${API_URL}/penjualan/${encodeURIComponent(noPenjualan)}`, {
+            method: 'DELETE',
+            headers: { Authorization: 'Bearer ' + token }
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || 'Gagal menghapus penjualan.');
+        closeSalesDetail();
+        await fetchSales();
+        showSalesMessage(`Penjualan ${noPenjualan} berhasil dihapus dan stok sudah dikembalikan.`, true);
+    } catch (err) {
+        console.error('Gagal menghapus penjualan:', err);
         showSalesMessage(err.message);
     }
 }

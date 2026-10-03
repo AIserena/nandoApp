@@ -7,5 +7,6 @@ router.get('/', verifyToken, penjualanController.getAllPenjualan);
 router.get('/:noPenjualan', verifyToken, penjualanController.getPenjualanById);
 router.post('/', verifyToken, penjualanController.createPenjualan);
 router.put('/:noPenjualan', verifyToken, penjualanController.updatePenjualan);
+router.delete('/:noPenjualan', verifyToken, penjualanController.deletePenjualan);
 
 module.exports = router;

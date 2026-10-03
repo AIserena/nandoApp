@@ -115,3 +115,17 @@ exports.updatePenjualan = async (req, res) => {
         res.status(500).json({ error: 'Gagal mengubah transaksi penjualan.' });
     }
 };
+
+exports.deletePenjualan = async (req, res) => {
+    if (!req.params.noPenjualan.trim() || req.params.noPenjualan.length > 50) {
+        return res.status(400).json({ error: 'Nomor penjualan tidak valid.' });
+    }
+    try {
+        const data = await Sales.delete(req.params.noPenjualan);
+        res.json({ status: 'Success', data });
+    } catch (err) {
+        if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
+        console.error('Gagal menghapus transaksi penjualan:', err);
+        res.status(500).json({ error: 'Gagal menghapus transaksi penjualan.' });
+    }
+};

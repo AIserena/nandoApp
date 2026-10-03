@@ -44,6 +44,104 @@ class Sales {
         return this.save(noPenjualan, { tanggal, kode_pelanggan, items });
     }
 
+    static async delete(noPenjualan) {
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+            const [sales] = await connection.query(
+                'SELECT NoPenjualan FROM penjualan WHERE NoPenjualan = ? FOR UPDATE',
+                [noPenjualan]
+            );
+            if (!sales.length) {
+                const error = new Error('Penjualan tidak ditemukan.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            const [details] = await connection.query(
+                `SELECT KodeBarang AS kode_barang, SUM(Qty) AS qty
+                 FROM detailpenjualan
+                 WHERE NoPenjualan = ?
+                 GROUP BY KodeBarang`,
+                [noPenjualan]
+            );
+            const quantities = new Map(details.map(item => [
+                item.kode_barang,
+                Number(item.qty)
+            ]));
+            const codes = [...quantities.keys()].sort();
+            const productState = new Map();
+            for (const code of codes) {
+                const [products] = await connection.query(
+                    `SELECT barang.NamaBarang AS nama_barang,
+                            inventory.KodeBarang AS stock_row,
+                            COALESCE(inventory.StokCurrent, 0) AS stok
+                     FROM masterbarang barang
+                     LEFT JOIN inventorystock inventory ON inventory.KodeBarang = barang.KodeBarang
+                     WHERE barang.KodeBarang = ?
+                     FOR UPDATE`,
+                    [code]
+                );
+                if (!products.length) {
+                    const error = new Error(`Barang ${code} tidak ditemukan.`);
+                    error.statusCode = 409;
+                    throw error;
+                }
+                productState.set(code, {
+                    ...products[0],
+                    has_stock: Boolean(products[0].stock_row),
+                    stok: Number(products[0].stok)
+                });
+            }
+
+            for (const code of codes) {
+                const product = productState.get(code);
+                const qty = quantities.get(code);
+                const closingStock = product.stok + qty;
+                if (product.has_stock) {
+                    await connection.query(
+                        'UPDATE inventorystock SET StokCurrent = ? WHERE KodeBarang = ?',
+                        [closingStock, code]
+                    );
+                } else {
+                    await connection.query(
+                        'INSERT INTO inventorystock (KodeBarang, StokCurrent) VALUES (?, ?)',
+                        [code, closingStock]
+                    );
+                }
+                await connection.query(
+                    `INSERT INTO inventorylog
+                        (KodeBarang, JenisTransaksi, NoReferensi, QtyMasuk, QtyKeluar, StokAwal, StokAkhir, Keterangan)
+                     VALUES (?, 'penjualan', ?, ?, 0, ?, ?, ?)`,
+                    [
+                        code,
+                        noPenjualan,
+                        qty,
+                        product.stok,
+                        closingStock,
+                        `Penghapusan Penjualan ${noPenjualan}`
+                    ]
+                );
+            }
+
+            await connection.query(
+                'DELETE FROM detailpenjualan WHERE NoPenjualan = ?',
+                [noPenjualan]
+            );
+            await connection.query(
+                'DELETE FROM penjualan WHERE NoPenjualan = ?',
+                [noPenjualan]
+            );
+            await connection.commit();
+            return { no_penjualan: noPenjualan };
+        } catch (err) {
+            await connection.rollback();
+            throw err;
+        } finally {
+            connection.release();
+        }
+    }
+
     static async save(existingNumber, { no_penjualan, tanggal, kode_pelanggan, items }) {
         const connection = await db.getConnection();
         try {
